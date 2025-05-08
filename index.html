@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SOS Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    />
+    <style>
+      #map {
+        height: 100vh;
+        width: 100%;
+      }
+      #statusContainer {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 10px 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        font-weight: bold;
+        line-height: 1.6;
+        text-align: right;
+      }
+      #resetButton {
+        margin-top: 10px;
+        background: red;
+        color: white;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 5px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="statusContainer">
+      <div id="status">Waiting for SOS signal...<br />Coordinates: -</div>
+      <button id="resetButton">Reset Map</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+      let hasReceivedSOS = false;
+      const statusDiv = document.getElementById("status");
+
+      // Initialize map
+      const map = L.map("map").setView([20.5937, 78.9629], 5); // Center of India
+
+      // Add OpenStreetMap tile layer to the map
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      // Placeholder for the SOS marker
+      let currentMarker = null;
+
+      // WebSocket connection (replace with your actual server URL)
+      const socket = new WebSocket("ws://localhost:3001");
+
+      socket.onmessage = function (event) {
+        // Log received data for debugging
+        const data = JSON.parse(event.data);
+        console.log("Received data:", data);  // Debugging line
+
+        const { lat, lng } = data;
+
+        if (!lat || !lng) {
+          console.error("Invalid coordinates received.");
+          return;
+        }
+
+        // Remove existing marker if there is one
+        if (currentMarker) map.removeLayer(currentMarker);
+
+        // Add new marker for SOS location
+        currentMarker = L.marker([lat, lng])
+          .addTo(map)
+          .bindPopup("🚨 SOS Location")
+          .openPopup();
+
+        // Zoom to the SOS location
+        map.setView([lat, lng], 13);
+
+        // Update status message with coordinates
+        statusDiv.innerHTML = `🚨 SOS received.<br>Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      };
+
+      // Reset button functionality
+      document.getElementById("resetButton").onclick = function () {
+        if (currentMarker) map.removeLayer(currentMarker);
+        currentMarker = null;
+        map.setView([20.5937, 78.9629], 5); // Reset to default map view
+        statusDiv.innerHTML = "Waiting for SOS signal...<br>Coordinates: -";
+        hasReceivedSOS = false;
+      };
+    </script>
+  </body>
+</html>
