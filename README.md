@@ -38,3 +38,6 @@ This project is a **LoRaWAN-based Emergency Communication Module** designed for 
    ```bash
    git clone https://github.com/your-username/LoRaWAN.git
    cd LoRaWAN
+   npm install
+   node server.js
+
